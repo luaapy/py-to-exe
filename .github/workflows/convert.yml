@@ -1,0 +1,64 @@
+name: File Converter
+
+on:
+  push:
+    paths:
+      - 'uploaded-files/**'
+  workflow_dispatch:
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup conversion environment
+        run: |
+          # Install required tools
+          # Example: pip install pyinstaller
+          echo "Setting up environment..."
+          
+      - name: Find uploaded file
+        id: find-file
+        run: |
+          FILE=$(ls -t uploaded-files/* | head -1)
+          if [ -z "$FILE" ]; then
+            echo "No file found"
+            exit 0
+          fi
+          echo "file=$FILE" >> $GITHUB_OUTPUT
+          echo "Found file: $FILE"
+      
+      - name: Convert file
+        if: steps.find-file.outputs.file != ''
+        run: |
+          # Your conversion command
+          # Example: pyinstaller --onefile ${{ steps.find-file.outputs.file }}
+          echo "Converting ${{ steps.find-file.outputs.file }}..."
+          
+          # Simulate conversion
+          mkdir -p dist
+          cp ${{ steps.find-file.outputs.file }} dist/converted-file.txt
+          echo "Conversion complete."
+      
+      - name: Upload artifact
+        if: steps.find-file.outputs.file != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: converted-file
+          path: dist/*
+          retention-days: 1
+      
+      - name: Cleanup uploaded file
+        if: steps.find-file.outputs.file != ''
+        run: |
+          rm ${{ steps.find-file.outputs.file }}
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add uploaded-files/
+          git commit -m "Auto-cleanup: Remove processed file"
+          git push
